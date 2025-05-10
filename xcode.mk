@@ -14,6 +14,8 @@ PACKAGE_DIRS := $(wildcard Packages/*)
 # Include common configuration
 include $(MK_DIR)/config.mk
 include $(MK_DIR)/help.mk
+include $(MK_DIR)/coverage.mk
+include $(MK_DIR)/docc-xcode.mk
 
 # Target to regenerate Xcode project files using Tuist
 # @help:generate: Generate Xcode project files
@@ -63,6 +65,12 @@ test-packages:
 
 # Target to build the project in Debug configuration
 # @help:build: Build for iOS simulator
+.PHONY: build-and-test
+build-and-test: build test-xcodebuild
+	@echo ""
+
+# Target to build the project in Debug configuration
+# @help:build: Build for iOS simulator
 .PHONY: build
 build:
 	@echo "$(BLUE)Building project (Debug)...$(RESET)"
@@ -77,8 +85,44 @@ build-release:
 	@xcodebuild build -workspace $(PROJECT_NAME).xcworkspace -scheme $(PROJECT_NAME) -configuration Release
 	@echo "$(GREEN)$(PROJECT_NAME) project built successfully (Release)$(RESET)"
 
-# Include common testing utilities
-include $(MK_DIR)/coverage.mk
+# @help:test-xcodebuild: Run tests using xcodebuild (required for Core Data tests)
+.PHONY: test-xcodebuild
+test-xcodebuild:
+	@echo "$(BLUE)Testing $(PROJECT_NAME) with xcodebuild...$(RESET)"
+	# this fails when adding -testPlan TestPlan.xctestplan
+	xcodebuild test \
+		-scheme $(PROJECT_NAME) \
+		-destination 'platform=macOS' \
+		2>&1 | xcbeautify || exit 1
+	@echo "$(GREEN)All tests completed successfully$(RESET)"
 
-# Include DocC commands
-include $(MK_DIR)/docc-xcode.mk
+# @help:test-xcodebuild-coverage: Run tests using xcodebuild with code coverage
+.PHONY: test-xcodebuild-coverage
+test-xcodebuild-coverage:
+	@echo "$(BLUE)Testing $(PROJECT_NAME) with xcodebuild and generating coverage...$(RESET)"
+	@mkdir -p coverage
+	@rm -rf ./coverage/TestResults.xcresult
+	# this fails when adding -testPlan TestPlan.xctestplan
+	@xcodebuild test \
+		-scheme $(PROJECT_NAME) \
+		-destination 'platform=macOS' \
+		-enableCodeCoverage YES \
+		-resultBundlePath ./coverage/TestResults.xcresult \
+		2>&1 | xcbeautify || exit 1
+	@echo "$(GREEN)Tests and code coverage completed successfully$(RESET)"
+	@echo "$(BLUE)Code coverage report available at ./coverage/TestResults.xcresult$(RESET)"
+	@echo "$(BLUE)Open with: xcrun xcresulttool get test-results summary --path ./coverage/TestResults.xcresult | jq .$(RESET)"
+	@echo "$(BLUE)For detailed results: xcrun xcresulttool get test-results tests --path ./coverage/TestResults.xcresult$(RESET)"
+
+# @help:test-xcodebuild-file: Run tests for a specific test file using xcodebuild (usage: make test-xcodebuild-file FILE=SomeTests)
+.PHONY: test-xcodebuild-file
+test-xcodebuild-file:
+	@if [ -z "$(FILE)" ]; then \
+		echo "$(RED)Error: specify FILE=<TestClassName> (without the .swift extension)$(RESET)"; exit 1; fi
+	@echo "$(BLUE)Testing file $(FILE) with xcodebuild...$(RESET)"
+	@xcodebuild test \
+		-scheme $(PROJECT_NAME) \
+		-destination 'platform=macOS' \
+		-only-testing:$(PROJECT_NAME)Tests/$(FILE) \
+		2>&1 | xcbeautify || exit 1
+	@echo "$(GREEN)Test for $(FILE) completed successfully$(RESET)"

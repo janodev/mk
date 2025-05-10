@@ -20,7 +20,7 @@ results-bundle result-bundle:
 	@if [ -d "$(PROJECT_NAME).xcodeproj" ] || ls *.xcodeproj >/dev/null 2>&1; then \
 		xcodebuild \
 		-scheme $(PROJECT_NAME) \
-		-destination 'platform=iOS Simulator,name=iPhone 16 18.4' \
+		-destination 'platform=iOS Simulator,name=$(SIMULATOR) $(SIMULATOR_OS)' \
 		-only-testing:$(PROJECT_NAME)Tests \
 		test \
 		-resultBundlePath $(RESULT_BUNDLE); \

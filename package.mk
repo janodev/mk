@@ -11,6 +11,8 @@ PACKAGE_SCHEME  = $(PROJECT_NAME)-Package
 # Include common configuration
 include $(MK_DIR)/config.mk
 include $(MK_DIR)/help.mk
+include $(MK_DIR)/coverage.mk
+include $(MK_DIR)/docc-package.mk
 
 # ===========================================
 # Default target - replaced by auto-generated help
@@ -79,9 +81,3 @@ test-method: build
 	else \
 		swift test --filter "$(PROJECT_NAME)Tests.$(TEST_FILE)/$(METHOD)" $(SWIFT_BUILD_FLAGS) --enable-code-coverage --disable-sandbox; \
 	fi
-
-# Include common testing utilities
-include $(MK_DIR)/coverage.mk
-
-# Include DocC commands
-include $(MK_DIR)/docc-package.mk

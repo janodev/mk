@@ -6,7 +6,7 @@
 
 # Default simulator configuration
 SIMULATOR       ?= iPhone 16
-SIMULATOR_OS    ?= 18.4
+SIMULATOR_OS    ?= 18.5
 
 # Result bundle for tests
 RESULT_BUNDLE   ?= TestRun.xcresult

@@ -66,13 +66,13 @@ test-packages:
 # Target to build the project in Debug configuration
 # @help:build: Build for iOS simulator
 .PHONY: build-and-test
-build-and-test: build test-xcodebuild
+build-and-test: build test-xcode
 	@echo ""
 
 # Target to build the project in Debug configuration
-# @help:build: Build for iOS simulator
-.PHONY: build
-build:
+# @help:build-xcode: Build using Xcode for iOS simulator
+.PHONY: build-xcode
+build-xcode:
 	@echo "$(BLUE)Building project (Debug)...$(RESET)"
 	@xcodebuild build -workspace $(PROJECT_NAME).xcworkspace -scheme $(PROJECT_NAME) -configuration Debug | xcbeautify -q
 	@echo "$(GREEN)$(PROJECT_NAME) project built successfully (Debug)$(RESET)"
@@ -85,9 +85,9 @@ build-release:
 	@xcodebuild build -workspace $(PROJECT_NAME).xcworkspace -scheme $(PROJECT_NAME) -configuration Release
 	@echo "$(GREEN)$(PROJECT_NAME) project built successfully (Release)$(RESET)"
 
-# @help:test-xcodebuild: Run tests using xcodebuild (required for Core Data tests)
-.PHONY: test-xcodebuild
-test-xcodebuild:
+# @help:test-xcode: Run tests using xcodebuild (required for Core Data tests)
+.PHONY: test-xcode
+test-xcode:
 	@echo "$(BLUE)Testing $(PROJECT_NAME) with xcodebuild...$(RESET)"
 	# this fails when adding -testPlan TestPlan.xctestplan
 	xcodebuild test \
@@ -96,9 +96,9 @@ test-xcodebuild:
 		2>&1 | xcbeautify || exit 1
 	@echo "$(GREEN)All tests completed successfully$(RESET)"
 
-# @help:test-xcodebuild-coverage: Run tests using xcodebuild with code coverage
-.PHONY: test-xcodebuild-coverage
-test-xcodebuild-coverage:
+# @help:test-xcode-coverage: Run tests using xcodebuild with code coverage
+.PHONY: test-xcode-coverage
+test-xcode-coverage:
 	@echo "$(BLUE)Testing $(PROJECT_NAME) with xcodebuild and generating coverage...$(RESET)"
 	@mkdir -p coverage
 	@rm -rf ./coverage/TestResults.xcresult
@@ -114,9 +114,9 @@ test-xcodebuild-coverage:
 	@echo "$(BLUE)Open with: xcrun xcresulttool get test-results summary --path ./coverage/TestResults.xcresult | jq .$(RESET)"
 	@echo "$(BLUE)For detailed results: xcrun xcresulttool get test-results tests --path ./coverage/TestResults.xcresult$(RESET)"
 
-# @help:test-xcodebuild-file: Run tests for a specific test file using xcodebuild (usage: make test-xcodebuild-file FILE=SomeTests)
-.PHONY: test-xcodebuild-file
-test-xcodebuild-file:
+# @help:test-xcode-file: Run tests for a specific test file using xcodebuild (usage: make test-xcode-file FILE=SomeTests)
+.PHONY: test-xcode-file
+test-xcode-file:
 	@if [ -z "$(FILE)" ]; then \
 		echo "$(RED)Error: specify FILE=<TestClassName> (without the .swift extension)$(RESET)"; exit 1; fi
 	@echo "$(BLUE)Testing file $(FILE) with xcodebuild...$(RESET)"

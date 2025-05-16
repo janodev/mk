@@ -13,6 +13,7 @@ include $(MK_DIR)/config.mk
 include $(MK_DIR)/help.mk
 include $(MK_DIR)/coverage.mk
 include $(MK_DIR)/docc-package.mk
+include $(MK_DIR)/tuist.mk
 
 # ===========================================
 # Default target - replaced by auto-generated help

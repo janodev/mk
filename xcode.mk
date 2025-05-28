@@ -116,3 +116,68 @@ test-xcode-file:
 		-only-testing:$(PROJECT_NAME)Tests/$(FILE) \
 		2>&1 | xcbeautify || exit 1
 	@echo "$(GREEN)Test for $(FILE) completed successfully$(RESET)"
+
+# @help:run: Close Xcode, regenerate project, build and run
+.PHONY: run
+run:
+	@echo "$(BLUE)Closing Xcode project $(PROJECT_NAME)...$(RESET)"
+	@osascript -e 'tell application "Xcode" to close (every window whose name contains "$(PROJECT_NAME)")' 2>/dev/null || true
+	@sleep 1
+	@echo "$(BLUE)Regenerating Xcode project files...$(RESET)"
+	@$(MAKE) generate
+	@if [ "$(PLATFORM)" = "macOS" ]; then \
+		echo "$(BLUE)Building and running macOS app...$(RESET)"; \
+		set -o pipefail && xcodebuild -workspace $(PROJECT_NAME).xcworkspace \
+			-scheme $(PROJECT_NAME) \
+			-destination "platform=macOS" \
+			-configuration Debug \
+			-derivedDataPath ./DerivedData \
+			build 2>&1 | xcbeautify || exit 1; \
+		echo "$(BLUE)Finding built app...$(RESET)"; \
+		APP_PATH=$$(find ./DerivedData -name "$(PROJECT_NAME).app" -type d 2>/dev/null | head -1); \
+		if [ -z "$$APP_PATH" ]; then \
+			echo "$(RED)Error: Could not find built app$(RESET)"; \
+			exit 1; \
+		fi; \
+		echo "$(BLUE)Found app at: $$APP_PATH$(RESET)"; \
+		echo "$(BLUE)Launching macOS app...$(RESET)"; \
+		open "$$APP_PATH"; \
+		echo "$(GREEN)macOS app launched successfully$(RESET)"; \
+	else \
+		echo "$(BLUE)Building and running in iOS simulator...$(RESET)"; \
+		SIMULATOR_ID=$$(xcrun simctl list devices available | grep "iPhone" | head -1 | awk -F'[()]' '{print $$2}'); \
+		if [ -z "$$SIMULATOR_ID" ]; then \
+			echo "$(RED)Error: No iPhone simulator found$(RESET)"; \
+			exit 1; \
+		fi; \
+		echo "$(BLUE)Using simulator: $$SIMULATOR_ID$(RESET)"; \
+		set -o pipefail && xcodebuild -workspace $(PROJECT_NAME).xcworkspace \
+			-scheme $(PROJECT_NAME) \
+			-destination "platform=iOS Simulator,id=$$SIMULATOR_ID" \
+			-configuration Debug \
+			-derivedDataPath ./DerivedData \
+			build 2>&1 | xcbeautify || exit 1; \
+		echo "$(BLUE)Finding built app...$(RESET)"; \
+		APP_PATH=$$(find ./DerivedData -name "$(PROJECT_NAME).app" -type d 2>/dev/null | head -1); \
+		if [ -z "$$APP_PATH" ]; then \
+			echo "$(RED)Error: Could not find built app$(RESET)"; \
+			exit 1; \
+		fi; \
+		echo "$(BLUE)Found app at: $$APP_PATH$(RESET)"; \
+		echo "$(BLUE)Launching app in simulator...$(RESET)"; \
+		xcrun simctl boot "$$SIMULATOR_ID" 2>/dev/null || true; \
+		open -a Simulator; \
+		sleep 3; \
+		xcrun simctl install booted "$$APP_PATH"; \
+		BUNDLE_ID=$$(plutil -p "$$APP_PATH/Info.plist" | grep CFBundleIdentifier | cut -d'"' -f4); \
+		echo "$(BLUE)Launching app with bundle ID: $$BUNDLE_ID$(RESET)"; \
+		xcrun simctl launch booted "$$BUNDLE_ID"; \
+		echo "$(GREEN)App launched successfully in simulator$(RESET)"; \
+	fi
+
+# @help:run-xcode: Same as 'run' but also opens Xcode
+.PHONY: run-xcode
+run-xcode: run
+	@echo "$(BLUE)Opening Xcode...$(RESET)"
+	@open $(PROJECT_NAME).xcworkspace
+	@echo "$(GREEN)Xcode opened successfully$(RESET)"

@@ -60,7 +60,7 @@ build-and-test: build test-xcode
 	@echo ""
 
 # Target to build the project in Debug configuration
-# @help:build-xcode: Build using Xcode for iOS simulator
+# @help:build-xcode: Build using Xcode for the given PLATFORM variable
 .PHONY: build-xcode
 build-xcode:
 	@echo "$(BLUE)Building project (Debug)...$(RESET)"

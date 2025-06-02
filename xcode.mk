@@ -79,10 +79,10 @@ build-release:
 .PHONY: test-xcode
 test-xcode:
 	@echo "$(BLUE)Testing $(PROJECT_NAME) with xcodebuild...$(RESET)"
-	# this fails when adding -testPlan TestPlan.xctestplan
 	xcodebuild test \
 		-scheme $(PROJECT_NAME) \
 		-destination 'platform=macOS' \
+		-testPlan $(PROJECT_NAME) \
 		2>&1 | xcbeautify || exit 1
 	@echo "$(GREEN)All tests completed successfully$(RESET)"
 
@@ -92,10 +92,10 @@ test-xcode-coverage:
 	@echo "$(BLUE)Testing $(PROJECT_NAME) with xcodebuild and generating coverage...$(RESET)"
 	@mkdir -p coverage
 	@rm -rf ./coverage/TestResults.xcresult
-	# this fails when adding -testPlan TestPlan.xctestplan
 	@xcodebuild test \
 		-scheme $(PROJECT_NAME) \
 		-destination 'platform=macOS' \
+		-testPlan $(PROJECT_NAME) \
 		-enableCodeCoverage YES \
 		-resultBundlePath ./coverage/TestResults.xcresult \
 		2>&1 | xcbeautify || exit 1
@@ -129,7 +129,7 @@ run:
 		echo "$(BLUE)Building and running macOS app...$(RESET)"; \
 		set -o pipefail && xcodebuild -workspace $(PROJECT_NAME).xcworkspace \
 			-scheme $(PROJECT_NAME) \
-			-destination "platform=macOS" \
+			-destination "platform=macOS,arch=arm64" \
 			-configuration Debug \
 			-derivedDataPath ./DerivedData \
 			build 2>&1 | xcbeautify || exit 1; \
@@ -181,3 +181,54 @@ run-xcode: run
 	@echo "$(BLUE)Opening Xcode...$(RESET)"
 	@open $(PROJECT_NAME).xcworkspace
 	@echo "$(GREEN)Xcode opened successfully$(RESET)"
+
+# @help:coverage-xcode: Generate and display code coverage summary for Xcode project
+.PHONY: coverage-xcode
+coverage-xcode: test-xcode-coverage
+	@echo "$(BLUE)Generating coverage summary from Xcode results...$(RESET)"
+	@xcrun xccov view --report --only-targets ./coverage/TestResults.xcresult | tee coverage-summary.txt
+	@echo "$(GREEN)Coverage summary saved to coverage-summary.txt$(RESET)"
+
+# @help:coverage-xcode-json: Generate JSON coverage report for Xcode project
+.PHONY: coverage-xcode-json
+coverage-xcode-json: test-xcode-coverage
+	@echo "$(BLUE)Exporting JSON coverage report...$(RESET)"
+	@mkdir -p coverage
+	@xcrun xccov view --report --json ./coverage/TestResults.xcresult > coverage/coverage.json
+	@echo "$(GREEN)Coverage report saved to coverage/coverage.json$(RESET)"
+
+# @help:coverage-xcode-html: Generate HTML coverage report and open in browser (requires lcov)
+.PHONY: coverage-xcode-html
+coverage-xcode-html: test-xcode-coverage
+	@echo "$(BLUE)Generating HTML coverage report...$(RESET)"
+	@mkdir -p coverage
+	# Extract coverage data and convert to lcov format
+	@xcrun xccov view --report --json ./coverage/TestResults.xcresult > coverage/coverage.json
+	@echo "$(BLUE)Converting to LCOV format...$(RESET)"
+	# Use a Python script to convert JSON to LCOV
+	@python3 -c 'import json, sys; \
+	data = json.load(open("coverage/coverage.json")); \
+	print("TN:"); \
+	for target in data.get("targets", []): \
+	    for file in target.get("files", []): \
+	        print(f"SF:{file[\"path\"]}"); \
+	        for line in file.get("functions", []): \
+	            if line.get("executionCount") is not None: \
+	                print(f"DA:{line[\"lineNumber\"]},{line[\"executionCount\"]}"); \
+	        print("end_of_record")' > coverage/coverage.lcov || \
+	(echo "$(YELLOW)Warning: Simple LCOV conversion failed. For better results, install xccov-to-lcov$(RESET)" && \
+	 echo "$(YELLOW)Install with: brew install xccov-to-lcov$(RESET)" && exit 1)
+	@genhtml coverage/coverage.lcov --output-directory coverage/html
+	@echo "$(BLUE)Opening coverage/html/index.html$(RESET)"
+	@open coverage/html/index.html
+
+# @help:coverage-xcode-file: Show coverage for a specific file in Xcode project (usage: make coverage-xcode-file FILE=path/to/File.swift)
+.PHONY: coverage-xcode-file
+coverage-xcode-file: test-xcode-coverage
+	@if [ -z "$(FILE)" ]; then \
+		echo "$(RED)Error: specify FILE=<path/to/File.swift>$(RESET)"; exit 1; fi
+	@echo "$(BLUE)Coverage for $(FILE)...$(RESET)"
+	@xcrun xccov view --file "$(FILE)" ./coverage/TestResults.xcresult || \
+		(echo "$(RED)File not found in coverage report. Try the full path starting from project root.$(RESET)" && \
+		 echo "$(YELLOW)Available files:$(RESET)" && \
+		 xcrun xccov view --file-list ./coverage/TestResults.xcresult | grep -i swift | head -20)

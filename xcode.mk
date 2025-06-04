@@ -53,10 +53,10 @@ test-packages:
 	done
 	@echo "$(GREEN)All package tests completed$(RESET)"
 
-# Target to build the project in Debug configuration
-# @help:build: Build for iOS simulator
+# Target to build and test the project
+# @help:build-and-test: Build and run tests
 .PHONY: build-and-test
-build-and-test: build test-xcode
+build-and-test: build-xcode test-xcode
 	@echo ""
 
 # Target to build the project in Debug configuration

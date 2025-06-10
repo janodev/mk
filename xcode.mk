@@ -86,6 +86,17 @@ test-xcode:
 		2>&1 | xcbeautify || exit 1
 	@echo "$(GREEN)All tests completed successfully$(RESET)"
 
+# @help:unit-test-xcode: Run only unit tests (excluding UI tests) using xcodebuild
+.PHONY: unit-test-xcode
+unit-test-xcode:
+	@echo "$(BLUE)Running unit tests for $(PROJECT_NAME)...$(RESET)"
+	xcodebuild test \
+		-scheme $(PROJECT_NAME) \
+		-destination 'platform=macOS' \
+		-only-testing:$(PROJECT_NAME)Tests \
+		2>&1 | xcbeautify || exit 1
+	@echo "$(GREEN)Unit tests completed successfully$(RESET)"
+
 # @help:test-xcode-coverage: Run tests using xcodebuild with code coverage
 .PHONY: test-xcode-coverage
 test-xcode-coverage:
@@ -116,6 +127,19 @@ test-xcode-file:
 		-only-testing:$(PROJECT_NAME)Tests/$(FILE) \
 		2>&1 | xcbeautify || exit 1
 	@echo "$(GREEN)Test for $(FILE) completed successfully$(RESET)"
+
+# @help:uitest-xcode-file: Run UI tests for a specific test file using xcodebuild (usage: make uitest-xcode-file FILE=SomeUITests)
+.PHONY: uitest-xcode-file
+uitest-xcode-file:
+	@if [ -z "$(FILE)" ]; then \
+		echo "$(RED)Error: specify FILE=<TestClassName> (without the .swift extension)$(RESET)"; exit 1; fi
+	@echo "$(BLUE)Testing UI file $(FILE) with xcodebuild...$(RESET)"
+	@xcodebuild test \
+		-scheme $(PROJECT_NAME) \
+		-destination 'platform=macOS' \
+		-only-testing:$(PROJECT_NAME)UITests/$(FILE) \
+		2>&1 | xcbeautify || exit 1
+	@echo "$(GREEN)UI test for $(FILE) completed successfully$(RESET)"
 
 # @help:run: Close Xcode, regenerate project, build and run
 .PHONY: run

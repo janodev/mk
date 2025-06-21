@@ -8,6 +8,10 @@
 # Auto‑generated scheme when a Swift‑PM package is opened in Xcode
 PACKAGE_SCHEME = $(PROJECT_NAME)
 
+# Default platform configuration (can be overridden in project Makefile)
+PLATFORM ?= macOS
+DEVICE_NAME ?= My Mac
+
 # Get all package directories
 PACKAGE_DIRS := $(wildcard Packages/*)
 
@@ -79,22 +83,38 @@ build-release:
 .PHONY: test-xcode
 test-xcode:
 	@echo "$(BLUE)Testing $(PROJECT_NAME) with xcodebuild...$(RESET)"
-	xcodebuild test \
-		-scheme $(PROJECT_NAME) \
-		-destination 'platform=macOS' \
-		-testPlan $(PROJECT_NAME) \
-		2>&1 | xcbeautify || exit 1
+	@if [ "$(PLATFORM)" = "iOS Simulator" ]; then \
+		xcodebuild test \
+			-scheme $(PROJECT_NAME) \
+			-destination 'platform=$(PLATFORM),name=$(DEVICE_NAME)' \
+			-testPlan $(PROJECT_NAME) \
+			2>&1 | xcbeautify || exit 1; \
+	else \
+		xcodebuild test \
+			-scheme $(PROJECT_NAME) \
+			-destination 'platform=$(PLATFORM)' \
+			-testPlan $(PROJECT_NAME) \
+			2>&1 | xcbeautify || exit 1; \
+	fi
 	@echo "$(GREEN)All tests completed successfully$(RESET)"
 
 # @help:unit-test-xcode: Run only unit tests (excluding UI tests) using xcodebuild
 .PHONY: unit-test-xcode
 unit-test-xcode:
 	@echo "$(BLUE)Running unit tests for $(PROJECT_NAME)...$(RESET)"
-	xcodebuild test \
-		-scheme $(PROJECT_NAME) \
-		-destination 'platform=macOS' \
-		-only-testing:$(PROJECT_NAME)Tests \
-		2>&1 | xcbeautify || exit 1
+	@if [ "$(PLATFORM)" = "iOS Simulator" ]; then \
+		xcodebuild test \
+			-scheme $(PROJECT_NAME) \
+			-destination 'platform=$(PLATFORM),name=$(DEVICE_NAME)' \
+			-only-testing:$(PROJECT_NAME)Tests \
+			2>&1 | xcbeautify || exit 1; \
+	else \
+		xcodebuild test \
+			-scheme $(PROJECT_NAME) \
+			-destination 'platform=$(PLATFORM)' \
+			-only-testing:$(PROJECT_NAME)Tests \
+			2>&1 | xcbeautify || exit 1; \
+	fi
 	@echo "$(GREEN)Unit tests completed successfully$(RESET)"
 
 # @help:test-xcode-coverage: Run tests using xcodebuild with code coverage
@@ -103,13 +123,23 @@ test-xcode-coverage:
 	@echo "$(BLUE)Testing $(PROJECT_NAME) with xcodebuild and generating coverage...$(RESET)"
 	@mkdir -p coverage
 	@rm -rf ./coverage/TestResults.xcresult
-	@xcodebuild test \
-		-scheme $(PROJECT_NAME) \
-		-destination 'platform=macOS' \
-		-testPlan $(PROJECT_NAME) \
-		-enableCodeCoverage YES \
-		-resultBundlePath ./coverage/TestResults.xcresult \
-		2>&1 | xcbeautify || exit 1
+	@if [ "$(PLATFORM)" = "iOS Simulator" ]; then \
+		xcodebuild test \
+			-scheme $(PROJECT_NAME) \
+			-destination 'platform=$(PLATFORM),name=$(DEVICE_NAME)' \
+			-testPlan $(PROJECT_NAME) \
+			-enableCodeCoverage YES \
+			-resultBundlePath ./coverage/TestResults.xcresult \
+			2>&1 | xcbeautify || exit 1; \
+	else \
+		xcodebuild test \
+			-scheme $(PROJECT_NAME) \
+			-destination 'platform=$(PLATFORM)' \
+			-testPlan $(PROJECT_NAME) \
+			-enableCodeCoverage YES \
+			-resultBundlePath ./coverage/TestResults.xcresult \
+			2>&1 | xcbeautify || exit 1; \
+	fi
 	@echo "$(GREEN)Tests and code coverage completed successfully$(RESET)"
 	@echo "$(BLUE)Code coverage report available at ./coverage/TestResults.xcresult$(RESET)"
 	@echo "$(BLUE)Open with: xcrun xcresulttool get test-results summary --path ./coverage/TestResults.xcresult | jq .$(RESET)"
@@ -121,11 +151,19 @@ test-xcode-file:
 	@if [ -z "$(FILE)" ]; then \
 		echo "$(RED)Error: specify FILE=<TestClassName> (without the .swift extension)$(RESET)"; exit 1; fi
 	@echo "$(BLUE)Testing file $(FILE) with xcodebuild...$(RESET)"
-	@xcodebuild test \
-		-scheme $(PROJECT_NAME) \
-		-destination 'platform=macOS' \
-		-only-testing:$(PROJECT_NAME)Tests/$(FILE) \
-		2>&1 | xcbeautify || exit 1
+	@if [ "$(PLATFORM)" = "iOS Simulator" ]; then \
+		xcodebuild test \
+			-scheme $(PROJECT_NAME) \
+			-destination 'platform=$(PLATFORM),name=$(DEVICE_NAME)' \
+			-only-testing:$(PROJECT_NAME)Tests/$(FILE) \
+			2>&1 | xcbeautify || exit 1; \
+	else \
+		xcodebuild test \
+			-scheme $(PROJECT_NAME) \
+			-destination 'platform=$(PLATFORM)' \
+			-only-testing:$(PROJECT_NAME)Tests/$(FILE) \
+			2>&1 | xcbeautify || exit 1; \
+	fi
 	@echo "$(GREEN)Test for $(FILE) completed successfully$(RESET)"
 
 # @help:uitest-xcode-file: Run UI tests for a specific test file using xcodebuild (usage: make uitest-xcode-file FILE=SomeUITests)
@@ -134,11 +172,19 @@ uitest-xcode-file:
 	@if [ -z "$(FILE)" ]; then \
 		echo "$(RED)Error: specify FILE=<TestClassName> (without the .swift extension)$(RESET)"; exit 1; fi
 	@echo "$(BLUE)Testing UI file $(FILE) with xcodebuild...$(RESET)"
-	@xcodebuild test \
-		-scheme $(PROJECT_NAME) \
-		-destination 'platform=macOS' \
-		-only-testing:$(PROJECT_NAME)UITests/$(FILE) \
-		2>&1 | xcbeautify || exit 1
+	@if [ "$(PLATFORM)" = "iOS Simulator" ]; then \
+		xcodebuild test \
+			-scheme $(PROJECT_NAME) \
+			-destination 'platform=$(PLATFORM),name=$(DEVICE_NAME)' \
+			-only-testing:$(PROJECT_NAME)UITests/$(FILE) \
+			2>&1 | xcbeautify || exit 1; \
+	else \
+		xcodebuild test \
+			-scheme $(PROJECT_NAME) \
+			-destination 'platform=$(PLATFORM)' \
+			-only-testing:$(PROJECT_NAME)UITests/$(FILE) \
+			2>&1 | xcbeautify || exit 1; \
+	fi
 	@echo "$(GREEN)UI test for $(FILE) completed successfully$(RESET)"
 
 # @help:run: Close Xcode, regenerate project, build and run

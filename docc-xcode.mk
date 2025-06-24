@@ -11,6 +11,7 @@ DOCC_PATH := xcrun docc
 .PHONY: docc-archive
 docc-archive:
 	@echo "$(BLUE)Generating DocC documentation archive...$(RESET)"
+	@echo "$(YELLOW)Executing: xcodebuild docbuild -scheme $(PROJECT_NAME) -destination 'generic/platform=iOS' -derivedDataPath ./DerivedData$(RESET)"
 	xcodebuild docbuild \
 		-scheme $(PROJECT_NAME) \
 		-destination 'generic/platform=iOS' \
@@ -70,6 +71,7 @@ docc-rendered: docc-archive
 .PHONY: preview-docs
 preview-docs:
 	@echo "$(BLUE)Generating DocC docs for local preview...$(RESET)"
+	@echo "$(YELLOW)Executing: xcodebuild docbuild -scheme $(PROJECT_NAME) -destination 'generic/platform=iOS' -derivedDataPath ./DerivedData$(RESET)"
 	xcodebuild docbuild \
 		-scheme $(PROJECT_NAME) \
 		-destination 'generic/platform=iOS' \

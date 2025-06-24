@@ -18,6 +18,7 @@ results-bundle result-bundle:
 	@echo "$(BLUE)Building $(PROJECT_NAME) and producing $(RESULT_BUNDLE)…$(RESET)"
 	@rm -rf $(RESULT_BUNDLE) || true
 	@if [ -d "$(PROJECT_NAME).xcodeproj" ] || ls *.xcodeproj >/dev/null 2>&1; then \
+		echo "$(YELLOW)Executing: xcodebuild -scheme $(PROJECT_NAME) -destination 'platform=iOS Simulator,name=$(SIMULATOR) $(SIMULATOR_OS)' -only-testing:$(PROJECT_NAME)Tests test -resultBundlePath $(RESULT_BUNDLE)$(RESET)"; \
 		xcodebuild \
 		-scheme $(PROJECT_NAME) \
 		-destination 'platform=iOS Simulator,name=$(SIMULATOR) $(SIMULATOR_OS)' \
@@ -25,6 +26,7 @@ results-bundle result-bundle:
 		test \
 		-resultBundlePath $(RESULT_BUNDLE); \
 	else \
+		echo "$(YELLOW)Executing: xcodebuild -scheme $(PACKAGE_SCHEME) -destination 'platform=macOS' test -resultBundlePath $(RESULT_BUNDLE)$(RESET)"; \
 		xcodebuild \
 		-scheme $(PACKAGE_SCHEME) \
 		-destination 'platform=macOS' \

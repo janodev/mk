@@ -27,7 +27,8 @@ include $(MK_DIR)/tuist.mk
 .PHONY: clean
 clean:
 	@echo "$(BLUE)Cleaning build artifacts and project files...$(RESET)"
-	@xcodebuild clean -workspace $(PROJECT_NAME).xcworkspace -scheme $(PROJECT_NAME) 2>/dev/null || true
+	@echo "$(YELLOW)Executing: xcodebuild clean -workspace $(PROJECT_NAME).xcworkspace -scheme $(PROJECT_NAME)$(RESET)"
+	xcodebuild clean -workspace $(PROJECT_NAME).xcworkspace -scheme $(PROJECT_NAME) 2>/dev/null || true
 	@rm -rf build
 	@rm -rf .build
 	@rm -rf DerivedData
@@ -68,7 +69,8 @@ build-and-test: build-xcode test-xcode
 .PHONY: build-xcode
 build-xcode:
 	@echo "$(BLUE)Building project (Debug)...$(RESET)"
-	@xcodebuild build -workspace $(PROJECT_NAME).xcworkspace -scheme $(PROJECT_NAME) -configuration Debug | xcbeautify -q
+	@echo "$(YELLOW)Executing: xcodebuild build -workspace $(PROJECT_NAME).xcworkspace -scheme $(PROJECT_NAME) -configuration Debug$(RESET)"
+	xcodebuild build -workspace $(PROJECT_NAME).xcworkspace -scheme $(PROJECT_NAME) -configuration Debug | xcbeautify -q
 	@echo "$(GREEN)$(PROJECT_NAME) project built successfully (Debug)$(RESET)"
 
 # Target to build the project in Release configuration
@@ -76,7 +78,8 @@ build-xcode:
 .PHONY: build-release
 build-release:
 	@echo "$(BLUE)Building $(PROJECT_NAME) project (Release)...$(RESET)"
-	@xcodebuild build -workspace $(PROJECT_NAME).xcworkspace -scheme $(PROJECT_NAME) -configuration Release
+	@echo "$(YELLOW)Executing: xcodebuild build -workspace $(PROJECT_NAME).xcworkspace -scheme $(PROJECT_NAME) -configuration Release$(RESET)"
+	xcodebuild build -workspace $(PROJECT_NAME).xcworkspace -scheme $(PROJECT_NAME) -configuration Release
 	@echo "$(GREEN)$(PROJECT_NAME) project built successfully (Release)$(RESET)"
 
 # @help:test-xcode: Run tests using xcodebuild (required for Core Data tests)
@@ -84,12 +87,14 @@ build-release:
 test-xcode:
 	@echo "$(BLUE)Testing $(PROJECT_NAME) with xcodebuild...$(RESET)"
 	@if [ "$(PLATFORM)" = "iOS Simulator" ]; then \
+		echo "$(YELLOW)Executing: xcodebuild test -scheme $(PROJECT_NAME) -destination 'platform=$(PLATFORM),name=$(DEVICE_NAME)' -testPlan $(PROJECT_NAME)$(RESET)"; \
 		xcodebuild test \
 			-scheme $(PROJECT_NAME) \
 			-destination 'platform=$(PLATFORM),name=$(DEVICE_NAME)' \
 			-testPlan $(PROJECT_NAME) \
 			2>&1 | xcbeautify || exit 1; \
 	else \
+		echo "$(YELLOW)Executing: xcodebuild test -scheme $(PROJECT_NAME) -destination 'platform=$(PLATFORM)' -testPlan $(PROJECT_NAME)$(RESET)"; \
 		xcodebuild test \
 			-scheme $(PROJECT_NAME) \
 			-destination 'platform=$(PLATFORM)' \
@@ -103,12 +108,14 @@ test-xcode:
 unit-test-xcode:
 	@echo "$(BLUE)Running unit tests for $(PROJECT_NAME)...$(RESET)"
 	@if [ "$(PLATFORM)" = "iOS Simulator" ]; then \
+		echo "$(YELLOW)Executing: xcodebuild test -scheme $(PROJECT_NAME) -destination 'platform=$(PLATFORM),name=$(DEVICE_NAME)' -only-testing:$(PROJECT_NAME)Tests$(RESET)"; \
 		xcodebuild test \
 			-scheme $(PROJECT_NAME) \
 			-destination 'platform=$(PLATFORM),name=$(DEVICE_NAME)' \
 			-only-testing:$(PROJECT_NAME)Tests \
 			2>&1 | xcbeautify || exit 1; \
 	else \
+		echo "$(YELLOW)Executing: xcodebuild test -scheme $(PROJECT_NAME) -destination 'platform=$(PLATFORM)' -only-testing:$(PROJECT_NAME)Tests$(RESET)"; \
 		xcodebuild test \
 			-scheme $(PROJECT_NAME) \
 			-destination 'platform=$(PLATFORM)' \
@@ -124,6 +131,7 @@ test-xcode-coverage:
 	@mkdir -p coverage
 	@rm -rf ./coverage/TestResults.xcresult
 	@if [ "$(PLATFORM)" = "iOS Simulator" ]; then \
+		echo "$(YELLOW)Executing: xcodebuild test -scheme $(PROJECT_NAME) -destination 'platform=$(PLATFORM),name=$(DEVICE_NAME)' -testPlan $(PROJECT_NAME) -enableCodeCoverage YES -resultBundlePath ./coverage/TestResults.xcresult$(RESET)"; \
 		xcodebuild test \
 			-scheme $(PROJECT_NAME) \
 			-destination 'platform=$(PLATFORM),name=$(DEVICE_NAME)' \
@@ -132,6 +140,7 @@ test-xcode-coverage:
 			-resultBundlePath ./coverage/TestResults.xcresult \
 			2>&1 | xcbeautify || exit 1; \
 	else \
+		echo "$(YELLOW)Executing: xcodebuild test -scheme $(PROJECT_NAME) -destination 'platform=$(PLATFORM)' -testPlan $(PROJECT_NAME) -enableCodeCoverage YES -resultBundlePath ./coverage/TestResults.xcresult$(RESET)"; \
 		xcodebuild test \
 			-scheme $(PROJECT_NAME) \
 			-destination 'platform=$(PLATFORM)' \
@@ -152,12 +161,14 @@ test-xcode-file:
 		echo "$(RED)Error: specify FILE=<TestClassName> (without the .swift extension)$(RESET)"; exit 1; fi
 	@echo "$(BLUE)Testing file $(FILE) with xcodebuild...$(RESET)"
 	@if [ "$(PLATFORM)" = "iOS Simulator" ]; then \
+		echo "$(YELLOW)Executing: xcodebuild test -scheme $(PROJECT_NAME) -destination 'platform=$(PLATFORM),name=$(DEVICE_NAME)' -only-testing:$(PROJECT_NAME)Tests/$(FILE)$(RESET)"; \
 		xcodebuild test \
 			-scheme $(PROJECT_NAME) \
 			-destination 'platform=$(PLATFORM),name=$(DEVICE_NAME)' \
 			-only-testing:$(PROJECT_NAME)Tests/$(FILE) \
 			2>&1 | xcbeautify || exit 1; \
 	else \
+		echo "$(YELLOW)Executing: xcodebuild test -scheme $(PROJECT_NAME) -destination 'platform=$(PLATFORM)' -only-testing:$(PROJECT_NAME)Tests/$(FILE)$(RESET)"; \
 		xcodebuild test \
 			-scheme $(PROJECT_NAME) \
 			-destination 'platform=$(PLATFORM)' \
@@ -173,12 +184,14 @@ uitest-xcode-file:
 		echo "$(RED)Error: specify FILE=<TestClassName> (without the .swift extension)$(RESET)"; exit 1; fi
 	@echo "$(BLUE)Testing UI file $(FILE) with xcodebuild...$(RESET)"
 	@if [ "$(PLATFORM)" = "iOS Simulator" ]; then \
+		echo "$(YELLOW)Executing: xcodebuild test -scheme $(PROJECT_NAME) -destination 'platform=$(PLATFORM),name=$(DEVICE_NAME)' -only-testing:$(PROJECT_NAME)UITests/$(FILE)$(RESET)"; \
 		xcodebuild test \
 			-scheme $(PROJECT_NAME) \
 			-destination 'platform=$(PLATFORM),name=$(DEVICE_NAME)' \
 			-only-testing:$(PROJECT_NAME)UITests/$(FILE) \
 			2>&1 | xcbeautify || exit 1; \
 	else \
+		echo "$(YELLOW)Executing: xcodebuild test -scheme $(PROJECT_NAME) -destination 'platform=$(PLATFORM)' -only-testing:$(PROJECT_NAME)UITests/$(FILE)$(RESET)"; \
 		xcodebuild test \
 			-scheme $(PROJECT_NAME) \
 			-destination 'platform=$(PLATFORM)' \
@@ -197,6 +210,7 @@ run:
 	@$(MAKE) generate
 	@if [ "$(PLATFORM)" = "macOS" ]; then \
 		echo "$(BLUE)Building and running macOS app...$(RESET)"; \
+		echo "$(YELLOW)Executing: xcodebuild -workspace $(PROJECT_NAME).xcworkspace -scheme $(PROJECT_NAME) -destination \"platform=macOS,arch=arm64\" -configuration Debug -derivedDataPath ./DerivedData build$(RESET)"; \
 		set -o pipefail && xcodebuild -workspace $(PROJECT_NAME).xcworkspace \
 			-scheme $(PROJECT_NAME) \
 			-destination "platform=macOS,arch=arm64" \
@@ -221,6 +235,7 @@ run:
 			exit 1; \
 		fi; \
 		echo "$(BLUE)Using simulator: $$SIMULATOR_ID$(RESET)"; \
+		echo "$(YELLOW)Executing: xcodebuild -workspace $(PROJECT_NAME).xcworkspace -scheme $(PROJECT_NAME) -destination \"platform=iOS Simulator,id=$$SIMULATOR_ID\" -configuration Debug -derivedDataPath ./DerivedData build$(RESET)"; \
 		set -o pipefail && xcodebuild -workspace $(PROJECT_NAME).xcworkspace \
 			-scheme $(PROJECT_NAME) \
 			-destination "platform=iOS Simulator,id=$$SIMULATOR_ID" \

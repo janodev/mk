@@ -5,6 +5,9 @@
 # You must define PROJECT_NAME in the Makefile that imports this file
 # This is imported by the Makefile in the Xcode project
 
+# Mark this as an Xcode project to avoid target conflicts
+PROJECT_TYPE = xcode
+
 # Auto‑generated scheme when a Swift‑PM package is opened in Xcode
 PACKAGE_SCHEME = $(PROJECT_NAME)
 
@@ -32,6 +35,8 @@ clean:
 	@rm -rf build
 	@rm -rf .build
 	@rm -rf DerivedData
+	@rm -f coverage-summary.txt
+	@rm -f default.profraw
 	@rm -rf $(PROJECT_NAME).xcodeproj
 	@rm -rf $(PROJECT_NAME).xcworkspace
 	@echo "$(GREEN)Clean completed successfully$(RESET)"
@@ -128,23 +133,22 @@ unit-test-xcode:
 .PHONY: test-xcode-coverage
 test-xcode-coverage:
 	@echo "$(BLUE)Testing $(PROJECT_NAME) with xcodebuild and generating coverage...$(RESET)"
+	@if [ -L "coverage" ]; then rm -f coverage; fi
 	@mkdir -p coverage
 	@rm -rf ./coverage/TestResults.xcresult
 	@if [ "$(PLATFORM)" = "iOS Simulator" ]; then \
-		echo "$(YELLOW)Executing: xcodebuild test -scheme $(PROJECT_NAME) -destination 'platform=$(PLATFORM),name=$(DEVICE_NAME)' -testPlan $(PROJECT_NAME) -enableCodeCoverage YES -resultBundlePath ./coverage/TestResults.xcresult$(RESET)"; \
+		echo "$(YELLOW)Executing: xcodebuild test -scheme $(PROJECT_NAME) -destination 'platform=$(PLATFORM),name=$(DEVICE_NAME)' -enableCodeCoverage YES -resultBundlePath ./coverage/TestResults.xcresult$(RESET)"; \
 		xcodebuild test \
 			-scheme $(PROJECT_NAME) \
 			-destination 'platform=$(PLATFORM),name=$(DEVICE_NAME)' \
-			-testPlan $(PROJECT_NAME) \
 			-enableCodeCoverage YES \
 			-resultBundlePath ./coverage/TestResults.xcresult \
 			2>&1 | xcbeautify || exit 1; \
 	else \
-		echo "$(YELLOW)Executing: xcodebuild test -scheme $(PROJECT_NAME) -destination 'platform=$(PLATFORM)' -testPlan $(PROJECT_NAME) -enableCodeCoverage YES -resultBundlePath ./coverage/TestResults.xcresult$(RESET)"; \
+		echo "$(YELLOW)Executing: xcodebuild test -scheme $(PROJECT_NAME) -destination 'platform=$(PLATFORM)' -enableCodeCoverage YES -resultBundlePath ./coverage/TestResults.xcresult$(RESET)"; \
 		xcodebuild test \
 			-scheme $(PROJECT_NAME) \
 			-destination 'platform=$(PLATFORM)' \
-			-testPlan $(PROJECT_NAME) \
 			-enableCodeCoverage YES \
 			-resultBundlePath ./coverage/TestResults.xcresult \
 			2>&1 | xcbeautify || exit 1; \
@@ -267,9 +271,9 @@ run-xcode: run
 	@open $(PROJECT_NAME).xcworkspace
 	@echo "$(GREEN)Xcode opened successfully$(RESET)"
 
-# @help:coverage-xcode: Generate and display code coverage summary for Xcode project
-.PHONY: coverage-xcode
-coverage-xcode: test-xcode-coverage
+# @help:coverage: Generate and display code coverage summary for Xcode project
+.PHONY: coverage
+coverage: test-xcode-coverage
 	@echo "$(BLUE)Generating coverage summary from Xcode results...$(RESET)"
 	@xcrun xccov view --report --only-targets ./coverage/TestResults.xcresult | tee coverage-summary.txt
 	@echo "$(GREEN)Coverage summary saved to coverage-summary.txt$(RESET)"
@@ -291,16 +295,18 @@ coverage-xcode-html: test-xcode-coverage
 	@xcrun xccov view --report --json ./coverage/TestResults.xcresult > coverage/coverage.json
 	@echo "$(BLUE)Converting to LCOV format...$(RESET)"
 	# Use a Python script to convert JSON to LCOV
-	@python3 -c 'import json, sys; \
-	data = json.load(open("coverage/coverage.json")); \
-	print("TN:"); \
-	for target in data.get("targets", []): \
-	    for file in target.get("files", []): \
-	        print(f"SF:{file[\"path\"]}"); \
-	        for line in file.get("functions", []): \
-	            if line.get("executionCount") is not None: \
-	                print(f"DA:{line[\"lineNumber\"]},{line[\"executionCount\"]}"); \
-	        print("end_of_record")' > coverage/coverage.lcov || \
+	@echo 'import json' > coverage/convert.py && \
+	echo 'data = json.load(open("coverage/coverage.json"))' >> coverage/convert.py && \
+	echo 'print("TN:")' >> coverage/convert.py && \
+	echo 'for target in data.get("targets", []):' >> coverage/convert.py && \
+	echo '    for file in target.get("files", []):' >> coverage/convert.py && \
+	echo '        print("SF:" + file["path"])' >> coverage/convert.py && \
+	echo '        for line in file.get("functions", []):' >> coverage/convert.py && \
+	echo '            if line.get("executionCount") is not None:' >> coverage/convert.py && \
+	echo '                print("DA:" + str(line["lineNumber"]) + "," + str(line["executionCount"]))' >> coverage/convert.py && \
+	echo '        print("end_of_record")' >> coverage/convert.py && \
+	python3 coverage/convert.py > coverage/coverage.lcov && \
+	rm coverage/convert.py || \
 	(echo "$(YELLOW)Warning: Simple LCOV conversion failed. For better results, install xccov-to-lcov$(RESET)" && \
 	 echo "$(YELLOW)Install with: brew install xccov-to-lcov$(RESET)" && exit 1)
 	@genhtml coverage/coverage.lcov --output-directory coverage/html
@@ -317,3 +323,11 @@ coverage-xcode-file: test-xcode-coverage
 		(echo "$(RED)File not found in coverage report. Try the full path starting from project root.$(RESET)" && \
 		 echo "$(YELLOW)Available files:$(RESET)" && \
 		 xcrun xccov view --file-list ./coverage/TestResults.xcresult | grep -i swift | head -20)
+
+# @help:coverage-quiet: Generate code coverage summary silently for Xcode project
+.PHONY: coverage-quiet
+coverage-quiet:
+	@rm -f coverage-summary.txt
+	@$(MAKE) test-xcode-coverage >/dev/null 2>&1
+	@xcrun xccov view --report --only-targets ./coverage/TestResults.xcresult > coverage-summary.txt 2>/dev/null
+	@cat coverage-summary.txt
